@@ -1,61 +1,76 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private jwtService: JwtService,
+    private readonly userRepository: Repository<User>,
   ) {}
 
-  // Register user
+  // Register new user
   async register(createUserDto: CreateUserDto): Promise<User> {
-    const { email, password, role } = createUserDto;
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({ where: { email: createUserDto.email } });
+    if (existingUser) {
+      throw new BadRequestException('User with this email already exists');
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.userRepository.create({
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const user = new User();
+    user.email = createUserDto.email;
+    user.password = await bcrypt.hash(createUserDto.password, 10);
+    user.role = createUserDto.role || 'user'; // Default role 'user'
 
     return this.userRepository.save(user);
   }
 
-  // Login user
-  async login(loginDto: LoginDto): Promise<any> {
-    const { email, password } = loginDto;
+  // Confirm email
+  async confirmEmail(email: string): Promise<any> {
     const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.isEmailConfirmed) throw new BadRequestException('Email already confirmed');
 
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      throw new Error('Invalid credentials');
-    }
-
-    // Generate JWT Token
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload);
-    return { access_token: token };
+    user.isEmailConfirmed = true;
+    await this.userRepository.save(user);
+    return { message: 'Email confirmed successfully' };
   }
 
-  // Confirm email
-  async confirmEmail(userId: number): Promise<void> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new Error('User not found');
+    // Validate user credentials
+    async validateUser(email: string, password: string): Promise<User> {
+
+        const user = await this.findByEmail(email);
+        
+
+        if (!user) {
+        throw new BadRequestException('Invalid credentials');
+        }
+    
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+        throw new BadRequestException('Invalid credentials');
+        }
+    
+        return user;
     }
-    user.emailConfirmed = true;
-    await this.userRepository.save(user);
+  
+
+    // Find user by email
+    async findByEmail(email: string): Promise<User | null> {
+        const user = await this.userRepository.findOne({ where: { email } });
+        return user || null;  // Zamiast rzucać wyjątek, zwróć null, jeśli użytkownik nie istnieje
+    }
+  
+
+  // Find user by ID (for AuthService)
+  async findById(id: number): Promise<User> {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 }
