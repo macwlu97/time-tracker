@@ -5,6 +5,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
 import { Role } from 'src/auth/role.enum';
+import { CreateProjectDto } from './dto/create-project.dto';
 
 @Controller('projects') 
 export class ProjectController {
@@ -15,12 +16,12 @@ export class ProjectController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.Admin)
   @ApiOperation({ summary: 'Create a new project' })
-  @ApiBody({ description: 'Name of the project', type: String })
+  @ApiBody({ description: 'Details of the project to be created', type: CreateProjectDto }) // Use DTO for request body
   @ApiResponse({ status: 201, description: 'The project has been successfully created.' })
   @ApiResponse({ status: 400, description: 'Bad request. Project name may be invalid.' })
   @ApiBearerAuth()
-  async create(@Body('name') name: string) {
-    return this.projectService.create(name);
+  async create(@Body() createProjectDto: CreateProjectDto) { // Use the DTO in the method signature
+    return this.projectService.create(createProjectDto.name); // Pass the project name from the DTO
   }
 
   // get list of projects with pagination
