@@ -1,98 +1,190 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+### README for the Application
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+#### Application Description
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+This application is a system for managing work sessions, projects, and users. Users can start and stop work sessions associated with projects. Additionally, the application offers functionality to view the total work time of users, either for an individual user or for all users in the system.
 
-## Description
+---
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Technologies
 
-## Project setup
+- **Backend**: NestJS (Node.js Framework)
+- **Database**: PostgreSQL
+- **ORM**: TypeORM
+- **Authentication**: JWT (JSON Web Token)
+- **Testing**: Jest, Supertest
+- **Swagger**: API Documentation
+- **Role Management**: Guards, Decorators
+
+---
+
+### Requirements
+
+1. **Node.js** (version 16 or higher)
+2. **PostgreSQL** (or any database compatible with TypeORM)
+3. **NestJS CLI** (optional, if you want to generate new modules, controllers, services, etc.)
+
+---
+
+### Installation
+
+1. **Clone the repository**:
+
+   ```bash
+   git clone <repo-url>
+   cd <project-folder>
+   ```
+
+2. **Install dependencies**:
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure the `.env` file**:
+   Create a `.env` file in the root of the project and fill in the following data:
+
+   ```env
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USERNAME=postgres
+   DB_PASSWORD=yourpassword
+   DB_DATABASE=yourdatabase
+   JWT_SECRET=yourjwtsecret
+   JWT_EXPIRATION=3600
+   ```
+
+   *The above environment variables are required for the application to work correctly, including connecting to the database and generating JWT tokens.*
+
+4. **Build and run the application**:
+
+   If the database is not created yet, run the following command to set it up:
+
+   ```bash
+   npm run typeorm migration:run
+   ```
+
+   Start the application in development mode:
+
+   ```bash
+   npm run start:dev
+   ```
+
+   After running, the application will be available at `http://localhost:3000`.
+
+---
+
+### Project Structure
+
+- **src/**: Main source folder
+  - **auth/**: Authentication logic (JWT, Guards, Roles)
+  - **user/**: User module (registration, login)
+  - **project/**: Project management module
+  - **work-session/**: Work session management module
+  - **common/**: Common functions, such as role decorators
+
+- **test/**: Contains unit and integration tests for the application
+
+---
+
+### Endpoints
+
+#### User Registration
+
+- **POST** `/users/register`
+  
+  - **Description**: Registers a new user.
+  - **Request Body**: `email`, `password`
+  - **Response**: Returns a confirmation link for the user's email.
+
+#### User Login
+
+- **POST** `/users/login`
+  
+  - **Description**: Logs in a user and returns a JWT token.
+  - **Request Body**: `email`, `password`
+  - **Response**: Returns a JWT token.
+
+#### Email Confirmation
+
+- **GET** `/users/confirm?email=email@example.com`
+  
+  - **Description**: Confirms the user's email.
+
+#### Create Project
+
+- **POST** `/projects`
+  
+  - **Description**: Creates a new project.
+  - **Request Body**: `name`
+  - **Response**: Returns information about the created project.
+
+#### Get Projects
+
+- **GET** `/projects`
+  
+  - **Description**: Retrieves a list of projects with pagination and sorting.
+  - **Query Parameters**: `page`, `limit`, `sortBy`, `sortOrder`
+  - **Response**: Returns a list of projects.
+
+#### Start Work Session
+
+- **POST** `/work-session/start`
+  
+  - **Description**: Starts a new work session.
+  - **Request Body**: `description`, `projectId`
+  - **Response**: Returns information about the started work session.
+
+#### Stop Work Session
+
+- **POST** `/work-session/stop`
+  
+  - **Description**: Stops an existing work session.
+  - **Request Body**: `sessionId`
+  - **Response**: Returns information about the stopped work session.
+
+#### Get Total Work Time for User
+
+- **GET** `/work-session/total-time`
+  
+  - **Description**: Returns the total work time for a user.
+  - **Query Parameter**: `userId`
+  - **Response**: Returns a summary of the user's work time.
+
+#### Get Total Work Time for All Users (Admin Only)
+- **GET** /work-session/total-time-all-users
+
+**Description**: Fetches the total work time for all users. Optionally, the result can be filtered by a specific user using the userId query parameter. This endpoint is restricted to admin users only.
+
+**Query Parameter**: userId (optional) - Filters by user ID. If not provided, it returns work time summaries for all users.
+
+**Response**: Returns a list of work time summaries for all users, with daily breakdowns of work hours.
+---
+
+### Roles and Permissions
+
+- **Roles**: The system supports different roles (e.g., `Admin`, `User`).
+  - **Admin**: Has access to all features, including creating and editing projects.
+  - **User**: Can only manage their own work sessions.
+
+- **Guards**:
+  - **JwtAuthGuard**: Checks the validity of the JWT token in the authorization header.
+  - **RolesGuard**: Ensures that the user has the correct role to perform a specific action.
+
+---
+
+### Testing
+
+Unit tests are written using **Jest**. To run the tests:
 
 ```bash
-$ npm install
+npm run test
 ```
 
-## Compile and run the project
+To run the full tests (including database integration):
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test:e2e
 ```
 
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Tests are located in the `src` folder within the respective modules.
