@@ -17,7 +17,21 @@ export class ProjectService {
   }
 
   // get all projects
-  async findAll(): Promise<Project[]> {
-    return await this.projectRepository.find();
+  async findAll(
+    page = 1,
+    limit = 10,
+    sortBy = 'name',
+    sortOrder: 'ASC' | 'DESC' = 'ASC',
+  ): Promise<{ data: Project[]; total: number }> {
+    const [data, total] = await this.projectRepository.findAndCount({
+      order: {
+        [sortBy]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+  
+    return { data, total };
   }
+  
 }

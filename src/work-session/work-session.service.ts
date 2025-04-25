@@ -6,6 +6,15 @@ import { CreateWorkSessionDto } from './dto/create-work-session.dto';
 import { User } from '../user/user.entity';
 import { Project } from '../project/project.entity';
 
+type WorkSummaryPerUser = {
+  userId: number;
+  email: string;
+  workSummary: {
+    day: string;
+    totalWorkTimeInHours: number;
+  }[];
+};
+
 @Injectable()
 export class WorkSessionService {
   constructor(
@@ -67,38 +76,90 @@ export class WorkSessionService {
     }
   }
 
-  // Get total work time for a user
-  async getTotalWorkTimeForUser(userId: number): Promise<any> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['sessions'], // loading session relations
-    });
-
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    // Get total work time for the currently logged-in user
+    async getTotalWorkTimeForLoggedUser(userId: number): Promise<any> {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['sessions'], // loading session relations
+      });
+    
+      if (!user) {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+    
+      // Aggregate work time for user and calculate total time per day
+      const workTimesPerDay = {};
+      user.sessions.forEach((session) => {
+        if (session.endTime) {
+          const day = session.startTime.toISOString().split('T')[0]; // YYYY-MM-DD format
+          const workDuration = session.endTime.getTime() - session.startTime.getTime();
+    
+          if (!workTimesPerDay[day]) {
+            workTimesPerDay[day] = 0;
+          }
+    
+          workTimesPerDay[day] += workDuration; // Accumulating the work time for the day
+        }
+      });
+    
+      // Prepare response data in hours for the chart (with up to 2 decimal places)
+      const totalWorkTimeByDay = Object.keys(workTimesPerDay).map((day) => ({
+        day,
+        totalWorkTimeInHours: parseFloat((workTimesPerDay[day] / (1000 * 3600)).toFixed(2)), // Convert to hours and limit to 2 decimals
+      }));
+    
+      return { totalWorkTimeByDay };
+    }
+    
+    // Get total work time for all user
+    async getTotalWorkTimeForAllUsers(userIdFilter?: number) {
+      // Fetch users with their sessions, apply filter if userId is provided
+      const users = await this.userRepository.find({
+        relations: ['sessions'],
+        where: userIdFilter ? { id: userIdFilter } : {}, // Filter by userId if passed
+      });
+    
+      type WorkSummaryPerUser = {
+        userId: number;
+        email: string;
+        workSummary: {
+          day: string; // Date in 'YYYY-MM-DD' format
+          totalWorkTimeInHours: number; // Work time in hours
+        }[];
+      };
+    
+      const result: WorkSummaryPerUser[] = [];
+    
+      // Process each user's work sessions
+      for (const user of users) {
+        const workTimesPerDay: Record<string, number> = {};
+    
+        // Process each session for the user
+        user.sessions.forEach((session) => {
+          if (session.endTime) {
+            const day = session.startTime.toISOString().split('T')[0]; // Extract date in 'YYYY-MM-DD' format
+            const duration = session.endTime.getTime() - session.startTime.getTime(); // Calculate duration of the session
+    
+            if (!workTimesPerDay[day]) {
+              workTimesPerDay[day] = 0;
+            }
+    
+            workTimesPerDay[day] += duration; // Accumulate work time for each day
+          }
+        });
+    
+        // Prepare the response for the user
+        result.push({
+          userId: user.id,
+          email: user.email,
+          workSummary: Object.entries(workTimesPerDay).map(([day, duration]) => ({
+            day, // Date of the session
+            totalWorkTimeInHours: parseFloat((duration / (1000 * 3600)).toFixed(2)), // Convert milliseconds to hours and round to two decimal places
+          })),
+        });
+      }
+    
+      return result; // Return the result for all users
     }
 
-    // Aggregate work time for user and calculate total time per day
-    const workTimesPerDay = {};
-    user.sessions.forEach((session) => {
-      if (session.endTime) {
-        const day = session.startTime.toISOString().split('T')[0]; // YYYY-MM-DD format
-        const workDuration = session.endTime.getTime() - session.startTime.getTime();
-
-        if (!workTimesPerDay[day]) {
-          workTimesPerDay[day] = 0;
-        }
-
-        workTimesPerDay[day] += workDuration; // Accumulating the work time for the day
-      }
-    });
-
-    // Prepare response data in hours
-    const totalWorkTimeByDay = Object.keys(workTimesPerDay).map((day) => ({
-      day,
-      totalWorkTimeInHours: workTimesPerDay[day] / (1000 * 3600), // Convert to hours
-    }));
-
-    return { totalWorkTimeByDay };
-  }
 }
